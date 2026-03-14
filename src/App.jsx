@@ -3,7 +3,7 @@ import jsQR from "jsqr";
 import Tesseract from 'tesseract.js';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 
-const API_BASE_URL = "http://127.0.0.1:5000/api";
+const API_BASE_URL = "/api";
 
 const KILL_CHAIN_STAGES = [
   { name: "Reconnaissance", icon: "🔍", color: "#60a5fa", desc: "Attacker gathers target info" },
@@ -60,7 +60,10 @@ async function fetchAnalysis(moduleId, input, isDemoMode) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ moduleId, input, isDemoMode }),
   });
-  if (!res.ok) throw new Error("Analysis failed. Check server.");
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Analysis failed. Check server.");
+  }
   return res.json();
 }
 
@@ -1294,7 +1297,9 @@ function SignupPage({ onSignup, onSwitchToLogin }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ full_name: fullName, email, password })
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => {
+        throw new Error("Invalid server response. Is the backend running?");
+      });
       if (data.success) {
         onSignup(data.user);
       } else {
@@ -1372,12 +1377,21 @@ function SignupPage({ onSignup, onSwitchToLogin }) {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(credentialResponse)
-              }).then(r => r.json()).then(data => {
+              }).then(async (r) => {
+                const data = await r.json().catch(() => {
+                  throw new Error("Invalid server response. Is the backend running?");
+                });
                 if (data.success) onSignup(data.user);
                 else setError(data.error);
-              }).catch(() => setError("Google Auth Failed"));
+              }).catch(err => {
+                console.error("Google Signup Error:", err);
+                setError("Google Auth Failed: " + (err.message || "Network Error"));
+              });
             }}
-            onError={() => setError("Google Login Failed")}
+            onError={() => {
+              console.error("Google Login Component Error");
+              setError("Google Login Failed: Check Console");
+            }}
             theme="filled_black"
             shape="pill"
             text="continue_with"
@@ -1419,7 +1433,9 @@ function LoginPage({ onLogin, onSwitchToSignup }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => {
+        throw new Error("Invalid server response. Is the backend running?");
+      });
       if (data.success) {
         onLogin(data.user);
       } else {
@@ -1495,12 +1511,21 @@ function LoginPage({ onLogin, onSwitchToSignup }) {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(credentialResponse)
-              }).then(r => r.json()).then(data => {
+              }).then(async (r) => {
+                const data = await r.json().catch(() => {
+                  throw new Error("Invalid server response. Is the backend running?");
+                });
                 if (data.success) onLogin(data.user);
                 else setError(data.error);
-              }).catch(() => setError("Google Auth Failed"));
+              }).catch(err => {
+                console.error("Google Login Error:", err);
+                setError("Google Auth Failed: " + (err.message || "Network Error"));
+              });
             }}
-            onError={() => setError("Google Login Failed")}
+            onError={() => {
+              console.error("Google Login Component Error");
+              setError("Google Login Failed: Check Console");
+            }}
             theme="filled_black"
             shape="pill"
             text="signin_with"

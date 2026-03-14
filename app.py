@@ -654,22 +654,22 @@ def auth_login():
 def auth_google():
     data = request.json
     token = data.get("credential")
+    print(f"[DEBUG] /api/auth/google hit. Token received: {bool(token)}")
     
     if not token:
         return jsonify({"success": False, "error": "No credential provided."}), 400
         
     try:
-        # Placeholder client ID - User must replace this in Google Cloud Console
         GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "684750461179-i1426j2a61vorp7qala0ilhri6ci2jev.apps.googleusercontent.com")
         print(f"[DEBUG] Verifying token with GOOGLE_CLIENT_ID: {GOOGLE_CLIENT_ID}")
         
-        # Add clock_skew tolerance for time sync issues
         idinfo = id_token.verify_oauth2_token(
             token, 
             google_requests.Request(), 
             GOOGLE_CLIENT_ID,
-            clock_skew_in_seconds=10
+            clock_skew_in_seconds=30 # Increased skew tolerance
         )
+        print(f"[DEBUG] Token verified for: {idinfo.get('email')}")
         
         email = idinfo['email'].lower()
         full_name = idinfo.get('name', '')
@@ -678,7 +678,7 @@ def auth_google():
         user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
         
         if not user:
-            # Create user if it doesn't exist. password_hash is set to a marker.
+            print(f"[DEBUG] Creating new user: {email}")
             conn.execute("INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)",
                          (full_name, email, "GOOGLE_AUTH"))
             conn.commit()
@@ -690,6 +690,7 @@ def auth_google():
         print(f"[DEBUG] Token verification failed: {str(e)}")
         return jsonify({"success": False, "error": f"Invalid authentication token: {str(e)}"}), 401
     except Exception as e:
+        print(f"[DEBUG] Unexpected error in auth_google: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -816,7 +817,12 @@ def forensics_report():
         return f"Error generating report: {str(e)}", 500
 
 @app.route("/")
-def index():
+@app.route("/<path:path>")
+def index(path=None):
+    # If the path looks like a file (has an extension), try to serve it from static
+    if path and "." in path:
+        return send_from_directory("static", path)
+    # Otherwise/Default: Serve index.html (SPA entry point)
     return send_from_directory("static", "index.html")
 
 @app.route("/api/decode-qr", methods=["POST"])
@@ -1372,5 +1378,6 @@ def stats():
         return jsonify({"error": "Failed to fetch stats"}), 500
 
 if __name__ == "__main__":
-    print("ThreatGuard AI Python Backend running on port 5000")
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    print(f"ThreatGuard AI Python Backend running on port {port}")
+    app.run(host="0.0.0.0", debug=True, port=port)
