@@ -1,0 +1,24 @@
+{
+  "SUSPICIOUS_TLDS": [
+    ".securelogin", 
+    ".verify", 
+    ".support"
+  ],
+  "BRAND_KEYWORDS": [
+    "chasebank", 
+    "wells", 
+    "instagram",
+    "facebook",
+    "binance"
+  ],
+  "URGENCY_TRIGGERS": [
+    "action required", 
+    "final warning", 
+    "account closure"
+  ],
+  "FINANCIAL_TRIGGERS": [
+    "wire transfer", 
+    "overdue balance", 
+    "outstanding invoice"
+  ]
+}
