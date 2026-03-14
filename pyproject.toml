@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "threatguard-ai"
+version = "0.1.0"
+authors = [
+  { name="User", email="user@example.com" },
+]
+description = "A cybersecurity threat detection AI application"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "flask",
+    "flask-cors",
+    "requests",
+    "pyzbar",
+    "Pillow",
+    "python-dotenv",
+    "gunicorn",
+    "cryptography",
+    "numpy",
+    "opencv-python-headless",
+    "google-auth",
+]
+
+[tool.setuptools]
+py-modules = ["app"]
